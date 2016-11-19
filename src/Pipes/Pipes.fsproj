@@ -45,6 +45,8 @@
   <ItemGroup>
     <Compile Include="Types.fs" />
     <Compile Include="Conn.fs" />
+    <Compile Include="Request.fs" />
+    <Compile Include="Response.fs" />
     <None Include="Script.fsx" />
   </ItemGroup>
   <PropertyGroup>
