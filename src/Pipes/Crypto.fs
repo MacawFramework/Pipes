@@ -22,13 +22,13 @@ module Crypto =
     provider.GetBytes(size)
 
   // Should these two be static?
-  let private key = randomKey 32
-  let private iv = randomKey 16
+  let private aesKey = randomKey 32
+  let private aesIV = randomKey 16
 
   /// Encrypts data using AES.
   let encrypt (data : string) : string =
     use provider = Aes.Create()
-    use encryptor = provider.CreateEncryptor(key, iv)
+    use encryptor = provider.CreateEncryptor(aesKey, aesIV)
     let input = Encoding.UTF8.GetBytes data
     let output = encryptor.TransformFinalBlock(input, 0, input.Length)
     Convert.ToBase64String(output)
@@ -36,7 +36,7 @@ module Crypto =
   /// Decrypts data using AES.
   let decrypt (data : string) : string =
     use provider = Aes.Create()
-    use decryptor = provider.CreateDecryptor(key, iv)
+    use decryptor = provider.CreateDecryptor(aesKey, aesIV)
     try
       let input = Convert.FromBase64String(data)
       let output = decryptor.TransformFinalBlock(input, 0, input.Length)
