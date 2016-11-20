@@ -22,13 +22,13 @@ module Crypto =
     provider.GetBytes(size)
 
   // These are lazy so the values will only be computed on runtime.
-  let private aesKey = lazy randomKey 32
-  let private aesIV = lazy randomKey 16
+  let private aesKey = randomKey 32
+  let private aesIV = randomKey 16
 
   /// Encrypts data using AES.
   let encrypt (data : string) : string =
     use provider = Aes.Create()
-    use encryptor = provider.CreateEncryptor(aesKey.Force(), aesIV.Force())
+    use encryptor = provider.CreateEncryptor(aesKey, aesIV)
     let input = Encoding.UTF8.GetBytes data
     let output = encryptor.TransformFinalBlock(input, 0, input.Length)
     Convert.ToBase64String(output)
@@ -36,7 +36,7 @@ module Crypto =
   /// Decrypts data using AES.
   let decrypt (data : string) : string =
     use provider = Aes.Create()
-    use decryptor = provider.CreateDecryptor(aesKey.Force(), aesIV.Force())
+    use decryptor = provider.CreateDecryptor(aesKey, aesIV)
     try
       let input = Convert.FromBase64String(data)
       let output = decryptor.TransformFinalBlock(input, 0, input.Length)
