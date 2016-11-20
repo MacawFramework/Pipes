@@ -6,7 +6,7 @@ open System
 
 module Crypto =
   /// Generates random bytes.
-  let randomKeyGenerator (size : int) : byte[] =
+  let randomKey (size : int) : byte[] =
     use provider = RandomNumberGenerator.Create()
     let mutable bytes = Array.zeroCreate<byte> size
     do provider.GetBytes(bytes)
@@ -21,8 +21,9 @@ module Crypto =
         new Rfc2898DeriveBytes(pass, salt, itr)
     provider.GetBytes(size)
 
-  let private key = randomKeyGenerator 32
-  let private iv = randomKeyGenerator 16
+  // Should these two be static?
+  let private key = randomKey 32
+  let private iv = randomKey 16
 
   /// Encrypts data using AES.
   let encrypt (data : string) : string =
@@ -36,14 +37,18 @@ module Crypto =
   let decrypt (data : string) : string =
     use provider = Aes.Create()
     use decryptor = provider.CreateDecryptor(key, iv)
-    // TODO: Catch errors here.
-    let input = Convert.FromBase64String(data)
-    let output = decryptor.TransformFinalBlock(input, 0, input.Length)
-    Encoding.UTF8.GetString(output)
+    try
+      let input = Convert.FromBase64String(data)
+      let output = decryptor.TransformFinalBlock(input, 0, input.Length)
+      Encoding.UTF8.GetString(output)
+    with
+      | :? FormatException as ex -> ""
+      | :? CryptographicException as ex -> ""
+      | :? ArgumentException as ex -> ""
 
   /// Creates an hmac256 from given data.
   let hmac (data : string) : byte[] = 
-    let key = randomKeyGenerator 64
+    let key = randomKey 64
     let input = Encoding.UTF8.GetBytes(data)
     use hmac = new HMACSHA256(key)
     hmac.ComputeHash(input) 
