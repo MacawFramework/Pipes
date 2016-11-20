@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Types.fs" />
+    <Compile Include="Crypto.fs" />
     <Compile Include="Conn.fs" />
     <Compile Include="Request.fs" />
     <Compile Include="Response.fs" />
