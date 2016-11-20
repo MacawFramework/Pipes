@@ -48,6 +48,7 @@
     <Compile Include="Conn.fs" />
     <Compile Include="Request.fs" />
     <Compile Include="Response.fs" />
+    <Compile Include="Cookies.fs" />
     <None Include="Script.fsx" />
   </ItemGroup>
   <PropertyGroup>
