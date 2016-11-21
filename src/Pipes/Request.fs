@@ -25,15 +25,16 @@ module Request =
   /// returns unknown.
   let method (conn : Conn) : RequestMethod = 
     if conn.ContainsKey(OwinRequestMethod) then
-      match conn.[OwinRequestMethod] :?> string with
-      | "GET" | "get" -> GET
-      | "HEAD" | "head" -> HEAD
-      | "POST" | "post" -> POST
-      | "PUT" | "put" -> PUT
-      | "DELETE" | "delete" -> DELETE
-      | "OPTION" | "option" -> OPTION
-      | "TRACE" | "trace" -> TRACE
-      | "PATCH" | "patch" -> PATCH
+      let rMethod = conn.[OwinRequestMethod] :?> string
+      match rMethod.ToLowerInvariant() with
+      | "get" -> GET
+      | "head" -> HEAD
+      | "post" -> POST
+      | "put" -> PUT
+      | "delete" -> DELETE
+      | "option" -> OPTION
+      | "trace" -> TRACE
+      | "patch" -> PATCH
       | _ -> UNKNOWN
     else UNKNOWN
   
