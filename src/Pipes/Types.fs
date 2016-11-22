@@ -1,5 +1,6 @@
 namespace Pipes
 
+open System
 open System.Collections.Generic
 
 [<AutoOpen>]
@@ -14,16 +15,17 @@ module Types =
     MaxRequestBodySize = 8;
   }
 
-  type Conn = Dictionary<string, obj>
+  type Conn() = 
+    inherit Dictionary<string, obj>(StringComparer.OrdinalIgnoreCase)
+
+  type Headers () = 
+    inherit Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+
   type RequestMethod = GET | HEAD | POST | PUT | DELETE | OPTION | TRACE | PATCH | UNKNOWN
-  type ResponseStatus = 
-    | OK = 200 
-    | CREATED = 201 
-    | DELETED = 202
 
   type Error = {
     Message : string
-    Status : ResponseStatus
+    Status : int
   }
 
   type Pipe = 

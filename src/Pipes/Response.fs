@@ -5,6 +5,81 @@ open Pipes.Conn
 open System.IO
 open System.Collections.Generic
 
+type ResponseStatus = 
+  | Continue = 100
+  | SwitchingProtocols = 101
+  | Processing = 102
+  | Checkpoint = 103
+  | Ok = 200 
+  | Created = 201 
+  | Accepted = 202
+  | NonAuthoritativeInformation = 203
+  | NoContent = 204
+  | ResetContent = 205
+  | PartialContent = 206
+  | MultipleStatus = 207
+  | AlreadyReported = 208
+  | IMUsed = 226
+  | MultipleChoices = 300
+  | MovedPermanently = 301
+  | Found = 302
+  | SeeOther = 303
+  | NotModified = 304
+  | UseProxy = 305
+  | SwitchProxy = 306
+  | TemporaryRedirect = 307
+  | PermanentlyRedirect = 308
+  | BadRequest = 400
+  | Unauthorized = 401
+  | PaymentRequired = 402
+  | Forbidden = 403
+  | NotFound = 404
+  | MethodNotAllowed = 405
+  | NotAcceptable = 406
+  | ProxyAuthenticationRequired = 407
+  | RequestTimeOut = 408
+  | Conflict = 409
+  | Gone = 410
+  | LengthRequired = 411
+  | PreconditionFailed = 412
+  | PayloadTooLarge = 413
+  | UriTooLong = 414
+  | UnsupportedMediaType = 415
+  | RangeNotSatisfiable = 416
+  | ExpectationFailed = 417
+  | ImATeapot = 418
+  | ImAFox = 419
+  | EnhanceYourCalm = 420
+  | MisdirectedRequest = 421
+  | UnprocessableEntity = 422
+  | Locked = 423
+  | FailedDependency = 424
+  | UpgradeRequired = 426
+  | PreconditionRequired = 428
+  | TooManyRequiests = 429
+  | RequestHeaderFieldsTooLarge = 431
+  | LoginTimeOut = 440
+  | NoResponse = 444
+  | RetryWith = 449
+  | BlockedByWindowsParentalControls = 450
+  | UnavailableForLegalReasons = 451
+  | SSLCertificateError = 495
+  | SSLCertificateRequired = 496
+  | HTTPRequestSentToHTTPSPort = 497
+  | ClientCloseRequest = 499
+  | InternalServerError = 500
+  | NotImplemented = 501
+  | BadGateway = 502
+  | ServiceUnavailable = 503
+  | GatewayTimeOut = 504
+  | HTTPVersionNotSupported = 505
+  | VariantAlsoNegotiates = 506
+  | InsufficientStorage = 507
+  | LoopDetected = 508
+  | NotExtended = 510
+  | NetworkAuthenticationRequired = 511
+
+
 module Response =
   /// Asynchronously writes an array of bytes into the Response
   /// body. It also sets the connection as halt, since you shouldn't
@@ -36,38 +111,42 @@ module Response =
 
   /// Get the response header by key.
   let getHeader (key : string) (conn : Conn) : string[] option= 
-    if conn.ContainsKey(OwinResponseHeaders) then
-      let headers = conn.[OwinResponseHeaders] :?> Dictionary<string, string[]>
-      if headers.ContainsKey(key) then
-        Some headers.[key]
-      else None
-    else None
+    match conn.TryGetValue(OwinResponseHeaders) with
+    | true, h ->
+      let headers = h :?> Headers
+      match headers.TryGetValue(key) with
+      | true, value -> Some value
+      | false, _ -> None
+    | false, _ -> None
 
   /// Removes the response header, if it exists and if the connection is not halted.
   let deleteHeader (key : string) (conn : Conn) : Conn = 
-    if conn.ContainsKey(OwinResponseHeaders) && not <| isHalted conn then
-      let headers = conn.[OwinResponseHeaders] :?> Dictionary<string, string[]>
+    match conn.TryGetValue(OwinResponseHeaders) with
+    | true, h -> 
+      let headers = h :?> Headers
       if headers.Remove(key) then
         conn.[OwinResponseHeaders] <- headers
         conn
       else conn // Nothing to remove
-    else conn // The header wasn't set. Wierd.
+    | false, _ -> conn
 
   /// Puts or updates a header into the response header, if it's not halted.
   let putHeader (key : string) (value : string[]) (conn : Conn) : Conn = 
     if not <| isHalted conn then
-      if conn.ContainsKey(OwinRequestHeaders) then
-        let headers = conn.[OwinRequestHeaders] :?> Dictionary<string, string[]>
-        if headers.ContainsKey(key) then
-          do headers.[key] <- value
-        else
-          do headers.Add(key, value)
-        conn.[OwinRequestHeaders] <- headers
+      match conn.TryGetValue(OwinResponseHeaders) with
+      | true, h -> 
+        let headers = h :?> Headers
+        match headers.TryGetValue(key) with
+        | true, _ -> do headers.[key] <- value
+        | false, _ -> do headers.Add(key, value)
+        do conn.[OwinResponseHeaders] <- headers
         conn
-      else // The header wasn't set. Wierd.
-        let header = new Dictionary<string, string[]>()
-        do header.Add(key, value)
-        conn.Add(OwinRequestHeaders, header)
+      | false, _ ->
+        let headers = Headers()
+        do headers.Add(key, value)
+        do conn.Add(OwinResponseHeaders, headers)
         conn
     else 
       conn
+
+    // let getCookies (conn : Conn) : Cookies list = 

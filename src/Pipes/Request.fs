@@ -2,6 +2,7 @@ namespace Pipes
 
 open Pipes.Conn
 
+open System
 open System.IO
 open System.Collections.Generic
 
@@ -38,37 +39,40 @@ module Request =
       | _ -> UNKNOWN
     else UNKNOWN
   
-  /// Get the request header by key.
+  /// Get the value in the header by key.
   let getHeader (key : string) (conn : Conn) : string[] option= 
-    if conn.ContainsKey(OwinRequestHeaders) then
-      let headers = conn.[OwinRequestHeaders] :?> Dictionary<string, string[]>
-      if headers.ContainsKey(key) then
-        Some headers.[key]
-      else None
-    else None
+    match conn.TryGetValue(OwinRequestHeaders) with
+    | true, h ->
+      let headers = h :?> Headers
+      match headers.TryGetValue(key) with
+      | true, value -> Some value
+      | false, _ -> None
+    | false, _ -> None
 
-  /// Removes the request header, if it exists.
+  /// Removes the header, if it exists.
   let deleteHeader (key : string) (conn : Conn) : Conn = 
-    if conn.ContainsKey(OwinRequestHeaders) then
-      let headers = conn.[OwinRequestHeaders] :?> Dictionary<string, string[]>
+    match conn.TryGetValue(OwinRequestHeaders) with
+    | true, h -> 
+      let headers = h :?> Headers
       if headers.Remove(key) then
         conn.[OwinRequestHeaders] <- headers
         conn
       else conn // Nothing to remove
-    else conn // The header wasn't set. Wierd.
+    | false, _ -> conn
 
   /// Puts or updates a header into the request.
   let putHeader (key : string) (value : string[]) (conn : Conn) : Conn = 
-    if conn.ContainsKey(OwinRequestHeaders) then
-      let headers = conn.[OwinRequestHeaders] :?> Dictionary<string, string[]>
-      if headers.ContainsKey(key) then
-        do headers.[key] <- value
-      else
-        do headers.Add(key, value)
-      conn.[OwinRequestHeaders] <- headers
+    match conn.TryGetValue(OwinRequestHeaders) with
+    | true, h -> 
+      let headers = h :?> Headers
+      match headers.TryGetValue(key) with
+      | true, _ -> do headers.[key] <- value
+      | false, _ -> do headers.Add(key, value)
+      do conn.[OwinRequestHeaders] <- headers
       conn
-    else // The header wasn't set. Wierd.
-      let header = new Dictionary<string, string[]>()
-      do header.Add(key, value)
-      conn.Add(OwinRequestHeaders, header)
+
+    | false, _ ->
+      let headers = Headers()
+      do headers.Add(key, value)
+      do conn.Add(OwinRequestHeaders, headers)
       conn
